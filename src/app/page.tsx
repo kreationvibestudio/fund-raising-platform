@@ -1,7 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FormEvent,
+  MouseEvent,
+  startTransition,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { manifesto } from "@/content/manifesto";
 import { Donation } from "@/lib/donations";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
@@ -67,6 +75,8 @@ export default function Home() {
   const [paymentStatus, setPaymentStatus] = useState<string>("");
   const [adminManualOpen, setAdminManualOpen] = useState(false);
   const [adminManualSecret, setAdminManualSecret] = useState("");
+  /** After mount, use the real browser URL so share links (especially WhatsApp) always include the correct campaign link. */
+  const [sharePageUrl, setSharePageUrl] = useState<string | null>(null);
   const [isLoadingDonations, setIsLoadingDonations] = useState(true);
   const [publicEnv, setPublicEnv] = useState<PublicEnvPayload>({
     paystackPublicKey: paystackPublicKeyBuild,
@@ -87,14 +97,26 @@ export default function Home() {
   const donorCount = useMemo(() => donations.length, [donations]);
   const progress = Math.min((totalDonated / goalAmount) * 100, 100);
   const remaining = Math.max(goalAmount - totalDonated, 0);
-  const shareText = `I just supported this campaign! We have raised ${formatCurrency(totalDonated)} so far toward our goal of ${formatCurrency(goalAmount)}. Join us and donate today.`;
-  const encodedCampaignUrl = encodeURIComponent(campaignUrl);
-  const encodedShareText = encodeURIComponent(shareText);
-  const shareLinks = {
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedCampaignUrl}`,
-    twitter: `https://twitter.com/intent/tweet?text=${encodedShareText}&url=${encodedCampaignUrl}`,
-    whatsapp: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${campaignUrl}`)}`,
-  };
+
+  const shareLinks = useMemo(() => {
+    const pageUrl = (sharePageUrl ?? campaignUrl).split("#")[0];
+    const shareText = `I just supported this campaign! We have raised ${formatCurrency(totalDonated)} so far toward our goal of ${formatCurrency(goalAmount)}. Join us and donate today.`;
+    const encodedCampaignUrl = encodeURIComponent(pageUrl);
+    const encodedShareText = encodeURIComponent(shareText);
+    const whatsappBody = `${shareText} ${pageUrl}`;
+    return {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedCampaignUrl}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodedShareText}&url=${encodedCampaignUrl}`,
+      // wa.me click-to-chat (no phone) — opens WhatsApp with prefilled message
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(whatsappBody)}`,
+    };
+  }, [totalDonated, sharePageUrl, campaignUrl]);
+
+  useEffect(() => {
+    startTransition(() => {
+      setSharePageUrl(window.location.href.split("#")[0]);
+    });
+  }, []);
 
   const getDonationAmount = () => {
     if (selectedAmount !== null) {
