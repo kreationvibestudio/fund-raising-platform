@@ -384,24 +384,18 @@ export default function Home() {
             <div className="inline-flex w-fit items-center rounded-lg bg-[#f47920] px-4 py-2 text-sm font-bold text-white shadow-md">
               2027
             </div>
-            <p className="text-sm font-medium text-white/95">
-              Raised so far: {formatCurrency(totalDonated)} / {formatCurrency(goalAmount)}
-            </p>
             <div className="grid gap-3 sm:grid-cols-3">
               <Card label="Goal" value={formatCurrency(goalAmount)} />
               <Card label="Total raised" value={formatCurrency(totalDonated)} />
               <Card label="Donors" value={String(donorCount)} />
             </div>
-            <div>
-              <div className="h-3 w-full overflow-hidden rounded-full bg-white/15">
-                <div
-                  className="h-full rounded-full bg-[#00a859] transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="mt-2 text-sm text-white/90">{progress.toFixed(1)}% of goal</p>
-              <p className="text-xs text-white/70">Remaining: {formatCurrency(remaining)}</p>
-            </div>
+            <CampaignProgressShowcase
+              totalDonated={totalDonated}
+              goalAmount={goalAmount}
+              progress={progress}
+              remaining={remaining}
+              formatCurrency={formatCurrency}
+            />
             <div className="flex flex-wrap gap-3">
               <a
                 href="#donate"
@@ -685,6 +679,81 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+type CampaignProgressShowcaseProps = {
+  totalDonated: number;
+  goalAmount: number;
+  progress: number;
+  remaining: number;
+  formatCurrency: (amount: number) => string;
+};
+
+function CampaignProgressShowcase({
+  totalDonated,
+  goalAmount,
+  progress,
+  remaining,
+  formatCurrency,
+}: CampaignProgressShowcaseProps) {
+  const safeProgress = Math.min(Math.max(progress, 0), 100);
+  const headlinePct = Math.round(safeProgress);
+
+  return (
+    <div className="rounded-2xl border border-white/25 bg-gradient-to-br from-white/[0.12] to-white/[0.04] p-4 shadow-[0_0_40px_-8px_rgba(0,168,89,0.35)] backdrop-blur-sm sm:p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#f47920] sm:text-xs">
+            Campaign fuel
+          </p>
+          <p className="mt-1 truncate text-2xl font-black tabular-nums tracking-tight text-white sm:text-3xl">
+            {formatCurrency(totalDonated)}
+          </p>
+          <p className="mt-0.5 text-xs text-white/75">
+            raised toward{" "}
+            <span className="font-semibold text-white">{formatCurrency(goalAmount)}</span>
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-4xl font-black leading-none text-[#00a859] drop-shadow-[0_0_12px_rgba(0,168,89,0.5)] sm:text-5xl">
+            {headlinePct}
+            <span className="text-2xl text-[#00a859]/90 sm:text-3xl">%</span>
+          </p>
+          <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-white/55">of goal</p>
+        </div>
+      </div>
+
+      <div className="relative mt-4">
+        <div className="h-6 overflow-hidden rounded-full bg-black/30 shadow-[inset_0_2px_8px_rgba(0,0,0,0.35)] ring-1 ring-white/15">
+          <div
+            className="relative h-full overflow-hidden rounded-full bg-gradient-to-r from-[#007a42] via-[#00a859] to-[#f47920] shadow-[0_0_24px_rgba(0,168,89,0.55)] transition-[width] duration-700 ease-out motion-reduce:transition-none"
+            style={{ width: `${safeProgress}%` }}
+          >
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-black/20" />
+            <span className="pointer-events-none absolute inset-y-0 w-2/5 bg-gradient-to-r from-transparent via-white/30 to-transparent motion-safe:animate-[campaign-bar-shine_2.8s_ease-in-out_infinite]" />
+          </div>
+        </div>
+        <div className="mt-1.5 flex justify-between px-0.5 font-mono text-[9px] font-semibold uppercase tracking-tighter text-white/40 sm:text-[10px]">
+          <span>Start</span>
+          <span>25%</span>
+          <span>50%</span>
+          <span>75%</span>
+          <span>Goal</span>
+        </div>
+      </div>
+
+      <p className="mt-3 text-center text-xs font-medium leading-snug text-white/85">
+        {remaining > 0 ? (
+          <>
+            <span className="font-bold text-[#f47920]">{formatCurrency(remaining)}</span> left to hit the
+            target — share the page and chip in.
+          </>
+        ) : (
+          <span className="font-bold text-[#00a859]">Goal reached — thank you, Esan!</span>
+        )}
+      </p>
+    </div>
   );
 }
 

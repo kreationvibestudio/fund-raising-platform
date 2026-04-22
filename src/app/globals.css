@@ -23,3 +23,12 @@
   color: var(--foreground);
   font-family: var(--font-campaign), ui-sans-serif, system-ui, sans-serif;
 }
+
+@keyframes campaign-bar-shine {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(380%);
+  }
+}
