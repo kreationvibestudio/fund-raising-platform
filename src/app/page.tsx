@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import Script from "next/script";
 import { Donation } from "@/lib/donations";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
@@ -12,12 +12,6 @@ const paystackPublicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "";
 const campaignUrl =
   process.env.NEXT_PUBLIC_CAMPAIGN_URL ?? "https://your-campaign-link.com";
 const presetAmounts = [1000, 5000, 10000, 20000, 50000];
-const campaignMilestones = [
-  { label: "Community outreach and enrollment", target: 1_000_000 },
-  { label: "Medical and welfare support allocation", target: 2_500_000 },
-  { label: "Education and youth empowerment rollout", target: 4_000_000 },
-  { label: "Full campaign goal achieved", target: 5_000_000 },
-];
 
 declare global {
   interface Window {
@@ -36,18 +30,7 @@ declare global {
   }
 }
 
-const initialDonations: Donation[] = [
-  {
-    id: "d1",
-    firstName: "Amina",
-    lastName: "Okoye",
-    amount: 150000,
-    message: "Proud to support this mission. Keep going!",
-    isAnonymous: false,
-    createdAt: "2026-04-22T11:30:00.000Z",
-    source: "manual",
-  },
-];
+const initialDonations: Donation[] = [];
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-NG", {
@@ -109,9 +92,17 @@ export default function Home() {
     setMessage("");
   };
 
-  const addDonation = async (source: Donation["source"], transactionReference?: string) => {
+  const addDonation = async (
+    source: Donation["source"],
+    transactionReference?: string,
+    options?: { requireEmail?: boolean },
+  ) => {
     const amount = getDonationAmount();
-    if (!firstName || !lastName || !email || Number.isNaN(amount) || amount <= 0) {
+    const requireEmail = options?.requireEmail ?? false;
+    if (!firstName || !lastName || Number.isNaN(amount) || amount <= 0) {
+      return false;
+    }
+    if (requireEmail && !email.trim()) {
       return false;
     }
 
@@ -127,7 +118,7 @@ export default function Home() {
       body: JSON.stringify({
         firstName: finalFirstName,
         lastName: finalLastName,
-        email: email.trim(),
+        email: email.trim() || undefined,
         amount,
         message: effectiveMessage || undefined,
         isAnonymous,
@@ -144,7 +135,7 @@ export default function Home() {
     return true;
   };
 
-  const handleManualDonation = async (event: FormEvent<HTMLFormElement>) => {
+  const handleManualDonation = async (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     const saved = await addDonation("manual");
     setPaymentStatus(saved ? "Donation recorded manually." : "Unable to save manual donation.");
@@ -178,7 +169,7 @@ export default function Home() {
         anonymous: isAnonymous,
       },
       callback: async (response) => {
-        const saved = await addDonation("paystack", response.reference);
+        const saved = await addDonation("paystack", response.reference, { requireEmail: true });
         setPaymentStatus(
           saved
             ? "Payment successful. Thank you for your donation."
@@ -199,7 +190,8 @@ export default function Home() {
       try {
         const response = await fetch("/api/donations", { cache: "no-store" });
         if (!response.ok) {
-          throw new Error("Failed to fetch donations.");
+          const errorPayload = (await response.json().catch(() => ({}))) as { message?: string };
+          throw new Error(errorPayload.message ?? "Failed to fetch donations.");
         }
         const payload = (await response.json()) as { donations?: Donation[] };
         if (isActive && payload.donations) {
@@ -436,59 +428,21 @@ export default function Home() {
               Donate with Paystack
             </button>
           </form>
-          <form onSubmit={handleManualDonation} className="mt-3">
+          <div className="mt-3">
             <button
-              type="submit"
+              type="button"
+              onClick={handleManualDonation}
               className="w-full rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100"
             >
               Record as Manual Donation
             </button>
-          </form>
+          </div>
           {paymentStatus ? (
             <p className="mt-3 rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700">{paymentStatus}</p>
           ) : null}
         </div>
       </section>
 
-      <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-black">Campaign Info</h2>
-        <p className="mt-3 text-sm text-zinc-700">
-          This campaign raises funds for urgent community support projects. Every verified Paystack
-          contribution updates campaign progress and helps us deliver targeted impact outcomes.
-        </p>
-        <div className="mt-5">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-600">
-            Milestones Tracker
-          </h3>
-          <ul className="mt-3 space-y-2">
-            {campaignMilestones.map((milestone) => {
-              const achieved = totalDonated >= milestone.target;
-              return (
-                <li
-                  key={milestone.label}
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2"
-                >
-                  <p className="text-sm text-zinc-800">{milestone.label}</p>
-                  <p
-                    className={`text-sm font-semibold ${
-                      achieved ? "text-emerald-700" : "text-zinc-600"
-                    }`}
-                  >
-                    {formatCurrency(milestone.target)} {achieved ? "- complete" : "- pending"}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-        <div className="mt-5 rounded-lg bg-zinc-50 p-4 text-sm text-zinc-700">
-          <p className="font-semibold text-zinc-800">Key Details</p>
-          <p className="mt-2">Goal: {formatCurrency(goalAmount)}</p>
-          <p>Current raised: {formatCurrency(totalDonated)}</p>
-          <p>Donors: {donorCount}</p>
-          <p>Campaign link: {campaignUrl}</p>
-        </div>
-      </section>
       <Script src="https://js.paystack.co/v1/inline.js" strategy="afterInteractive" />
     </main>
   );

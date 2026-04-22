@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DonationInsertPayload, mapDonationRow, mapInsertPayloadToRow } from "@/lib/donations";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { createSupabasePublicServerClient, createSupabaseServiceClient } from "@/lib/supabase-server";
 
 const DONATIONS_TABLE = "donations";
 
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    // Reads should work with anon/public key under RLS policy.
+    const supabase = createSupabasePublicServerClient();
     const { data, error } = await supabase
       .from(DONATIONS_TABLE)
       .select(
@@ -35,7 +36,6 @@ export async function POST(request: NextRequest) {
     if (
       !payload.firstName ||
       !payload.lastName ||
-      !payload.email ||
       !Number.isFinite(payload.amount) ||
       payload.amount <= 0
     ) {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServiceClient();
     const row = mapInsertPayloadToRow(payload);
     const { data, error } = await supabase
       .from(DONATIONS_TABLE)
