@@ -65,6 +65,8 @@ export default function Home() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [message, setMessage] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<string>("");
+  const [adminManualOpen, setAdminManualOpen] = useState(false);
+  const [adminManualSecret, setAdminManualSecret] = useState("");
   const [isLoadingDonations, setIsLoadingDonations] = useState(true);
   const [publicEnv, setPublicEnv] = useState<PublicEnvPayload>({
     paystackPublicKey: paystackPublicKeyBuild,
@@ -115,26 +117,31 @@ export default function Home() {
   const addDonation = async (
     source: Donation["source"],
     transactionReference?: string,
-    options?: { requireEmail?: boolean },
-  ) => {
+    options?: { requireEmail?: boolean; adminSecret?: string },
+  ): Promise<{ ok: boolean; message?: string }> => {
     const amount = getDonationAmount();
     const requireEmail = options?.requireEmail ?? false;
     if (!firstName || !lastName || Number.isNaN(amount) || amount <= 0) {
-      return false;
+      return { ok: false, message: "Please fill in donor name and a valid amount." };
     }
     if (requireEmail && !email.trim()) {
-      return false;
+      return { ok: false, message: "Email is required for Paystack donations." };
     }
 
     const effectiveMessage = message.trim();
     const finalFirstName = isAnonymous ? "Anonymous" : firstName.trim();
     const finalLastName = isAnonymous ? "Donor" : lastName.trim();
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (source === "manual" && options?.adminSecret) {
+      headers["x-admin-secret"] = options.adminSecret;
+    }
+
     const response = await fetch("/api/donations", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
         firstName: finalFirstName,
         lastName: finalLastName,
@@ -147,18 +154,33 @@ export default function Home() {
       }),
     });
 
+    const data = (await response.json().catch(() => ({}))) as { message?: string };
     if (!response.ok) {
-      return false;
+      return {
+        ok: false,
+        message:
+          data.message ??
+          (response.status === 401 ? "Invalid admin secret." : "Unable to save donation."),
+      };
     }
 
     resetForm();
-    return true;
+    return { ok: true };
   };
 
   const handleManualDonation = async (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    const saved = await addDonation("manual");
-    setPaymentStatus(saved ? "Donation recorded manually." : "Unable to save manual donation.");
+    if (!adminManualSecret.trim()) {
+      setPaymentStatus("Enter the admin secret to record a manual donation.");
+      return;
+    }
+    const result = await addDonation("manual", undefined, { adminSecret: adminManualSecret.trim() });
+    if (result.ok) {
+      setAdminManualSecret("");
+      setPaymentStatus("Donation recorded manually.");
+    } else {
+      setPaymentStatus(result.message ?? "Unable to save manual donation.");
+    }
   };
 
   const waitForPaystackPop = (maxMs = 12000, stepMs = 80) =>
@@ -227,11 +249,11 @@ export default function Home() {
       },
       callback: function (response: { reference: string }) {
         void addDonation("paystack", response.reference, { requireEmail: true })
-          .then((saved) => {
+          .then((result) => {
             setPaymentStatus(
-              saved
+              result.ok
                 ? "Payment successful. Thank you for your donation."
-                : "Payment succeeded but donation could not be saved locally.",
+                : (result.message ?? "Payment succeeded but donation could not be saved locally."),
             );
           })
           .catch(() => {
@@ -602,14 +624,41 @@ export default function Home() {
               Donate with Paystack
             </button>
           </form>
-          <div className="mt-3">
+          <div className="mt-6 border-t border-[#1a301f]/15 pt-5">
             <button
               type="button"
-              onClick={handleManualDonation}
-              className="w-full rounded-lg border-2 border-[#1a301f]/25 bg-white px-4 py-2.5 text-sm font-semibold text-[#1a301f] transition hover:border-[#00a859]/50 hover:bg-[#eef2ef]"
+              onClick={() => setAdminManualOpen((open) => !open)}
+              className="text-left text-xs font-bold uppercase tracking-wide text-[#1a301f]/60 underline-offset-2 hover:text-[#f47920] hover:underline"
             >
-              Record as Manual Donation
+              {adminManualOpen ? "Hide" : "Show"} admin — manual / offline donation
             </button>
+            {adminManualOpen ? (
+              <div className="mt-4 rounded-xl border border-[#1a301f]/20 bg-[#fafcfb] p-4">
+                <p className="text-xs leading-relaxed text-[#1a301f]/70">
+                  Only campaign admins can record bank transfers or offline gifts. The secret is never
+                  shown publicly — set <code className="rounded bg-[#eef2ef] px-1">ADMIN_MANUAL_SECRET</code>{" "}
+                  on the server (Render env).
+                </p>
+                <label className="mt-3 block text-xs font-semibold uppercase tracking-wide text-[#1a301f]">
+                  Admin secret
+                </label>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={adminManualSecret}
+                  onChange={(event) => setAdminManualSecret(event.target.value)}
+                  placeholder="Server admin secret"
+                  className="mt-1 w-full rounded-lg border border-[#1a301f]/25 bg-white px-3 py-2 text-sm text-[#1a301f] placeholder:text-[#1a301f]/40 focus:border-[#00a859] focus:outline-none focus:ring-2 focus:ring-[#00a859]/25"
+                />
+                <button
+                  type="button"
+                  onClick={handleManualDonation}
+                  className="mt-3 w-full rounded-lg border-2 border-[#1a301f]/30 bg-white px-4 py-2.5 text-sm font-semibold text-[#1a301f] transition hover:border-[#00a859]/50 hover:bg-[#eef2ef]"
+                >
+                  Record as Manual Donation
+                </button>
+              </div>
+            ) : null}
           </div>
           {paymentStatus ? (
             <p className="mt-3 rounded-md border border-[#1a301f]/10 bg-[#eef2ef] px-3 py-2 text-sm text-[#1a301f]">

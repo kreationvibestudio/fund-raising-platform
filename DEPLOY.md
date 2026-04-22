@@ -23,3 +23,7 @@ Ensure on Render:
 Optional fallback:
 
 - `NEXT_PUBLIC_PAYSTACK_DONATE_URL` = your hosted page `https://paystack.com/pay/...` (must contain `/pay/`).
+
+## Manual donations (admin only)
+
+Recording a **manual** donation (bank/offline) requires server env **`ADMIN_MANUAL_SECRET`** (long random string). On the site, expand **Admin — manual / offline donation**, enter that secret, then submit. Without a valid secret, `POST /api/donations` with `source: manual` returns **401**.

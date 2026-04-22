@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminManualSecretValid } from "@/lib/admin-secret";
 import { DonationInsertPayload, mapDonationRow, mapInsertPayloadToRow } from "@/lib/donations";
 import { createSupabasePublicServerClient, createSupabaseServiceClient } from "@/lib/supabase-server";
 
@@ -43,6 +44,23 @@ export async function POST(request: NextRequest) {
         { success: false, message: "Invalid donation payload." },
         { status: 400 },
       );
+    }
+
+    if (payload.source === "manual") {
+      const expected = process.env.ADMIN_MANUAL_SECRET?.trim();
+      if (!expected) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Manual donations are disabled. Set ADMIN_MANUAL_SECRET on the server.",
+          },
+          { status: 503 },
+        );
+      }
+      const provided = request.headers.get("x-admin-secret")?.trim() ?? "";
+      if (!isAdminManualSecretValid(provided, expected)) {
+        return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+      }
     }
 
     const supabase = createSupabaseServiceClient();
