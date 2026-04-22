@@ -210,6 +210,8 @@ export default function Home() {
     }
 
     const ref = `don_${Date.now()}`;
+    // Paystack inline validates `callback` strictly — async arrow functions can fail
+    // ("Attribute callback must be a valid function"). Use a plain function + .then().
     const handler = window.PaystackPop.setup({
       key: paystackPublicKey,
       email: email.trim(),
@@ -219,18 +221,23 @@ export default function Home() {
       metadata: {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
-        message: message.trim(),
-        anonymous: isAnonymous,
+        message: message.trim() || "",
+        anonymous: isAnonymous ? "yes" : "no",
       },
-      callback: async (response) => {
-        const saved = await addDonation("paystack", response.reference, { requireEmail: true });
-        setPaymentStatus(
-          saved
-            ? "Payment successful. Thank you for your donation."
-            : "Payment succeeded but donation could not be saved locally.",
-        );
+      callback: function (response: { reference: string }) {
+        void addDonation("paystack", response.reference, { requireEmail: true })
+          .then((saved) => {
+            setPaymentStatus(
+              saved
+                ? "Payment successful. Thank you for your donation."
+                : "Payment succeeded but donation could not be saved locally.",
+            );
+          })
+          .catch(() => {
+            setPaymentStatus("Payment succeeded but recording the donation failed. Please contact support.");
+          });
       },
-      onClose: () => {
+      onClose: function () {
         setPaymentStatus("Payment popup closed.");
       },
     });

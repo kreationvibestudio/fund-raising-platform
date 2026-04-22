@@ -21,7 +21,7 @@ type PaystackVerifyResponse = {
       first_name?: string;
       last_name?: string;
       message?: string;
-      anonymous?: boolean;
+      anonymous?: boolean | string;
     };
   };
 };
@@ -97,7 +97,12 @@ export async function POST(request: NextRequest) {
     const donorEmail = verified.customer.email;
     const donorFirstName = verified.metadata?.first_name || verified.customer.first_name || "Donor";
     const donorLastName = verified.metadata?.last_name || verified.customer.last_name || "";
-    const isAnonymous = Boolean(verified.metadata?.anonymous);
+    const anonRaw = verified.metadata?.anonymous;
+    const isAnonymous =
+      anonRaw === true ||
+      anonRaw === "yes" ||
+      anonRaw === "true" ||
+      anonRaw === "1";
     const message =
       typeof verified.metadata?.message === "string" && verified.metadata.message.trim()
         ? verified.metadata.message.trim()
