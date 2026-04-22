@@ -1,7 +1,6 @@
 "use client";
 
-import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
-import Script from "next/script";
+import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Donation } from "@/lib/donations";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
@@ -57,6 +56,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<string>("");
   const [isLoadingDonations, setIsLoadingDonations] = useState(true);
+  const paystackFormRef = useRef<HTMLFormElement>(null);
 
   const totalDonated = useMemo(
     () => donations.reduce((sum, donation) => sum + donation.amount, 0),
@@ -183,6 +183,17 @@ export default function Home() {
 
     handler.openIframe();
   };
+
+  useEffect(() => {
+    const form = paystackFormRef.current;
+    if (!form) return;
+    const paystackSrc = "https://js.paystack.co/v1/inline.js";
+    if (form.querySelector(`script[src="${paystackSrc}"]`)) return;
+    const script = document.createElement("script");
+    script.src = paystackSrc;
+    script.async = true;
+    form.prepend(script);
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -350,7 +361,7 @@ export default function Home() {
           <p className="mt-2 text-sm text-zinc-600">
             Pick a preset amount, enter a custom amount, and donate via Paystack popup.
           </p>
-          <form onSubmit={handlePaystackDonation} className="mt-4 space-y-3">
+          <form ref={paystackFormRef} onSubmit={handlePaystackDonation} className="mt-4 space-y-3">
             <input
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
@@ -442,8 +453,6 @@ export default function Home() {
           ) : null}
         </div>
       </section>
-
-      <Script src="https://js.paystack.co/v1/inline.js" strategy="afterInteractive" />
     </main>
   );
 }
