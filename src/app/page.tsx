@@ -6,11 +6,13 @@ import { Donation } from "@/lib/donations";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
 const goalAmount = 5_000_000;
-const paystackDonateUrl =
-  process.env.NEXT_PUBLIC_PAYSTACK_DONATE_URL ?? "https://paystack.com";
-const paystackPublicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "";
-const campaignUrl =
-  process.env.NEXT_PUBLIC_CAMPAIGN_URL ?? "https://your-campaign-link.com";
+/** Build-time fallbacks; runtime values come from `/api/public-env` on the client. */
+const paystackDonateUrlBuild = process.env.NEXT_PUBLIC_PAYSTACK_DONATE_URL?.trim() ?? "";
+const paystackPublicKeyBuild = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY?.trim() ?? "";
+const campaignUrlBuild = process.env.NEXT_PUBLIC_CAMPAIGN_URL?.trim() ?? "";
+
+const isPaystackHostedPaymentUrl = (url: string) =>
+  url.length > 0 && url.includes("paystack.com/pay");
 const presetAmounts = [1000, 5000, 10000, 20000, 50000];
 
 declare global {
@@ -46,6 +48,12 @@ const formatDonationDate = (isoDate: string) =>
     timeZone: "UTC",
   }).format(new Date(isoDate));
 
+type PublicEnvPayload = {
+  paystackPublicKey: string;
+  paystackDonateUrl: string;
+  campaignUrl: string;
+};
+
 export default function Home() {
   const [donations, setDonations] = useState(initialDonations);
   const [firstName, setFirstName] = useState("");
@@ -57,7 +65,17 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<string>("");
   const [isLoadingDonations, setIsLoadingDonations] = useState(true);
+  const [publicEnv, setPublicEnv] = useState<PublicEnvPayload>({
+    paystackPublicKey: paystackPublicKeyBuild,
+    paystackDonateUrl: paystackDonateUrlBuild,
+    campaignUrl: campaignUrlBuild || "https://your-campaign-link.com",
+  });
   const paystackFormRef = useRef<HTMLFormElement>(null);
+
+  const paystackPublicKey = publicEnv.paystackPublicKey.trim() || paystackPublicKeyBuild;
+  const paystackDonateUrl = publicEnv.paystackDonateUrl.trim() || paystackDonateUrlBuild;
+  const campaignUrl = publicEnv.campaignUrl.trim() || campaignUrlBuild || "https://your-campaign-link.com";
+  const hostedPaystackFallbackUrl = isPaystackHostedPaymentUrl(paystackDonateUrl) ? paystackDonateUrl : "";
 
   const totalDonated = useMemo(
     () => donations.reduce((sum, donation) => sum + donation.amount, 0),
@@ -142,7 +160,24 @@ export default function Home() {
     setPaymentStatus(saved ? "Donation recorded manually." : "Unable to save manual donation.");
   };
 
-  const handlePaystackDonation = (event: FormEvent<HTMLFormElement>) => {
+  const waitForPaystackPop = (maxMs = 12000, stepMs = 80) =>
+    new Promise<boolean>((resolve) => {
+      const start = Date.now();
+      const tick = () => {
+        if (typeof window !== "undefined" && window.PaystackPop) {
+          resolve(true);
+          return;
+        }
+        if (Date.now() - start >= maxMs) {
+          resolve(false);
+          return;
+        }
+        window.setTimeout(tick, stepMs);
+      };
+      tick();
+    });
+
+  const handlePaystackDonation = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const amount = getDonationAmount();
     if (!firstName || !lastName || !email || Number.isNaN(amount) || amount <= 0) {
@@ -150,9 +185,27 @@ export default function Home() {
       return;
     }
 
-    if (!window.PaystackPop || !paystackPublicKey) {
-      setPaymentStatus("Paystack popup unavailable. Opening donation link in a new tab.");
-      window.open(paystackDonateUrl, "_blank", "noopener,noreferrer");
+    if (!paystackPublicKey) {
+      setPaymentStatus(
+        "Paystack public key is missing. Add NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY in Render (or .env.local), save, then redeploy with Clear build cache.",
+      );
+      return;
+    }
+
+    if (!window.PaystackPop) {
+      setPaymentStatus("Loading Paystack checkout…");
+      await waitForPaystackPop();
+    }
+
+    if (!window.PaystackPop) {
+      if (hostedPaystackFallbackUrl) {
+        setPaymentStatus("Opening your hosted Paystack payment page in a new tab.");
+        window.open(hostedPaystackFallbackUrl, "_blank", "noopener,noreferrer");
+      } else {
+        setPaymentStatus(
+          "Paystack could not load (blocked or offline). Refresh and try again, or add NEXT_PUBLIC_PAYSTACK_DONATE_URL with your https://paystack.com/pay/… page as fallback.",
+        );
+      }
       return;
     }
 
@@ -184,6 +237,19 @@ export default function Home() {
 
     handler.openIframe();
   };
+
+  useEffect(() => {
+    void fetch("/api/public-env", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data: Partial<PublicEnvPayload>) => {
+        setPublicEnv((previous) => ({
+          paystackPublicKey: (data.paystackPublicKey ?? "").trim() || previous.paystackPublicKey,
+          paystackDonateUrl: (data.paystackDonateUrl ?? "").trim() || previous.paystackDonateUrl,
+          campaignUrl: (data.campaignUrl ?? "").trim() || previous.campaignUrl,
+        }));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const form = paystackFormRef.current;
@@ -286,9 +352,7 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap gap-3">
               <a
-                href={paystackDonateUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#donate"
                 className="inline-flex items-center justify-center rounded-lg bg-[#f47920] px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#e06a15]"
               >
                 Donate with Paystack
@@ -383,7 +447,7 @@ export default function Home() {
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-[#1a301f]/20 bg-white p-6 shadow-sm">
+        <div id="donate" className="scroll-mt-8 rounded-2xl border border-[#1a301f]/20 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-[#1a301f]">Donation Form</h2>
           <p className="mt-2 text-sm text-[#1a301f]/70">
             Pick a preset amount, enter a custom amount, and donate via Paystack popup.
