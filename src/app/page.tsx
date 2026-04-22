@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { manifesto } from "@/content/manifesto";
 import { Donation } from "@/lib/donations";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
@@ -410,6 +411,69 @@ export default function Home() {
               className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#002d15]/80 via-transparent to-transparent lg:bg-gradient-to-l"
               aria-hidden
             />
+          </div>
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="manifesto-heading"
+        className="relative scroll-mt-8"
+      >
+        <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-[#f47920]/35 via-[#00a859]/20 to-[#002d15]/25 blur-sm" />
+        <div className="relative overflow-hidden rounded-2xl border border-[#1a301f]/15 bg-white shadow-[0_12px_40px_-12px_rgba(0,45,21,0.18)]">
+          <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#00a859]/10" aria-hidden />
+          <div className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[#f47920]/10" aria-hidden />
+          <div className="relative p-6 sm:p-8 lg:p-10">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#f47920]">
+              {manifesto.kicker}
+            </p>
+            <h2
+              id="manifesto-heading"
+              className="mt-2 max-w-3xl text-2xl font-extrabold leading-tight tracking-tight text-[#1a301f] sm:text-3xl"
+            >
+              {manifesto.title}
+            </h2>
+            <p className="mt-3 max-w-2xl text-base font-semibold leading-relaxed text-[#002d15] sm:text-lg">
+              {manifesto.subtitle}
+            </p>
+            <div className="mt-6 max-w-3xl space-y-4 text-sm leading-relaxed text-[#1a301f]/85 sm:text-base">
+              {manifesto.paragraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            </div>
+            <div className="mt-8 rounded-xl border border-[#00a859]/25 bg-[#f6fbf8] p-5 sm:p-6">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#1a301f]/60">
+                What your gift stands for
+              </p>
+              <ul className="mt-3 space-y-2.5">
+                {manifesto.pledges.map((pledge, index) => (
+                  <li key={index} className="flex gap-3 text-sm font-medium text-[#1a301f] sm:text-base">
+                    <span
+                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#00a859] text-xs font-bold text-white"
+                      aria-hidden
+                    >
+                      {index + 1}
+                    </span>
+                    <span>{pledge}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="mt-8 rounded-xl bg-gradient-to-br from-[#002d15] to-[#1a301f] p-5 text-white shadow-inner sm:p-6">
+              <p className="text-base font-medium leading-relaxed text-white/95 sm:text-lg">
+                {manifesto.closingLine}
+              </p>
+              <p className="mt-3 text-sm text-white/75">
+                You have already seen our progress above—every additional donation pushes us closer to
+                field work, outreach, and the infrastructure of a winning, service-driven mandate.
+              </p>
+              <a
+                href="#donate"
+                className="mt-5 inline-flex items-center justify-center rounded-lg bg-[#f47920] px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#e06a15]"
+              >
+                {manifesto.donateCtaLabel} →
+              </a>
+            </div>
           </div>
         </div>
       </section>
