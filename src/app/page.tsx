@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Donation } from "@/lib/donations";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
@@ -244,121 +245,147 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-10">
-      <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-emerald-700">Community Campaign</p>
-        <h1 className="mt-2 text-3xl font-bold text-black">Fund Raising Platform</h1>
-        <p className="mt-3 text-sm text-zinc-600">
-          Share this page on WhatsApp to keep everyone updated in real time.
-        </p>
-        <p className="mt-2 text-sm font-medium text-zinc-700">
-          Raised so far: {formatCurrency(totalDonated)} / {formatCurrency(goalAmount)}
-        </p>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <Card label="Goal Amount" value={formatCurrency(goalAmount)} />
-          <Card label="Total Donated" value={formatCurrency(totalDonated)} />
-          <Card label="Donor Count" value={String(donorCount)} />
-        </div>
-
-        <div className="mt-5">
-          <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-200">
-            <div
-              className="h-full rounded-full bg-emerald-600 transition-all"
-              style={{ width: `${progress}%` }}
-            />
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
+      <section className="overflow-hidden rounded-2xl border border-[#0a2412] shadow-[0_20px_50px_-12px_rgba(0,45,21,0.35)]">
+        <div className="flex flex-col-reverse bg-gradient-to-br from-[#002d15] via-[#0f2818] to-[#1a301f] lg:flex-row lg:items-stretch">
+          <div className="flex flex-1 flex-col justify-center gap-5 p-6 sm:p-8 lg:max-w-[58%] lg:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
+              The Esan Peoples Project
+            </p>
+            <div>
+              <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-[#00a859] sm:text-3xl lg:text-4xl">
+                Akhakon Anenih A.A.
+              </h1>
+              <p className="mt-2 text-base font-bold text-[#f47920] sm:text-lg">
+                For Member House of Representatives
+              </p>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-white/90 sm:text-base">
+                Esan North East / South East Federal Constituency
+              </p>
+            </div>
+            <div className="inline-flex w-fit items-center rounded-lg bg-[#f47920] px-4 py-2 text-sm font-bold text-white shadow-md">
+              2027
+            </div>
+            <p className="text-sm font-medium text-white/95">
+              Raised so far: {formatCurrency(totalDonated)} / {formatCurrency(goalAmount)}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Card label="Goal" value={formatCurrency(goalAmount)} />
+              <Card label="Total raised" value={formatCurrency(totalDonated)} />
+              <Card label="Donors" value={String(donorCount)} />
+            </div>
+            <div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-[#00a859] transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="mt-2 text-sm text-white/90">{progress.toFixed(1)}% of goal</p>
+              <p className="text-xs text-white/70">Remaining: {formatCurrency(remaining)}</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={paystackDonateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-lg bg-[#f47920] px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#e06a15]"
+              >
+                Donate with Paystack
+              </a>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-white/70">
+                Share this campaign
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a
+                  href={shareLinks.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/30 bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  Facebook
+                </a>
+                <a
+                  href={shareLinks.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/30 bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  Twitter / X
+                </a>
+                <a
+                  href={shareLinks.whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/30 bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  WhatsApp
+                </a>
+              </div>
+            </div>
           </div>
-          <p className="mt-2 text-sm text-zinc-700">{progress.toFixed(1)}% of goal reached</p>
-          <p className="mt-1 text-xs text-zinc-600">Remaining: {formatCurrency(remaining)}</p>
-        </div>
-
-        <a
-          href={paystackDonateUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-6 inline-flex rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-        >
-          Donate with Paystack
-        </a>
-
-        <div className="mt-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-600">
-            Share this campaign
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <a
-              href={shareLinks.facebook}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-            >
-              Share on Facebook
-            </a>
-            <a
-              href={shareLinks.twitter}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-            >
-              Share on Twitter
-            </a>
-            <a
-              href={shareLinks.whatsapp}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-            >
-              Share on WhatsApp
-            </a>
+          <div className="relative min-h-[220px] w-full sm:min-h-[280px] lg:min-h-[420px] lg:w-[42%] lg:max-w-md lg:shrink-0">
+            <Image
+              src="/hero-campaign.png"
+              alt="Akhakon Anenih A.A. campaign poster — Road to House of Representatives 2027"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 42vw"
+              className="object-cover object-[center_top]"
+            />
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#002d15]/80 via-transparent to-transparent lg:bg-gradient-to-l"
+              aria-hidden
+            />
           </div>
         </div>
       </section>
 
       <section className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-black">Donor Wall</h2>
-          <p className="mt-2 text-sm text-zinc-600">
+        <div className="rounded-2xl border border-[#1a301f]/20 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-[#1a301f]">Donor Wall</h2>
+          <p className="mt-2 text-sm text-[#1a301f]/70">
             Real-time donor feed with names, amounts, messages, and timestamps.
           </p>
           <ul className="mt-4 space-y-3">
             {isLoadingDonations ? (
-              <li className="rounded-lg border border-zinc-200 p-3 text-sm text-zinc-600">
+              <li className="rounded-lg border border-[#1a301f]/15 bg-[#eef2ef] p-3 text-sm text-[#1a301f]/70">
                 Loading donor wall...
               </li>
             ) : donations.map((donation) => (
               <li
                 key={donation.id}
-                className="rounded-lg border border-zinc-200 p-3"
+                className="rounded-lg border border-[#1a301f]/12 bg-[#fafcfb] p-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium text-black">
+                    <p className="font-semibold text-[#1a301f]">
                       {donation.firstName} {donation.lastName}
                     </p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-[#1a301f]/55">
                       {formatDonationDate(donation.createdAt)} UTC - {donation.source}
                     </p>
                   </div>
-                  <p className="font-semibold text-emerald-700">{formatCurrency(donation.amount)}</p>
+                  <p className="font-semibold text-[#00a859]">{formatCurrency(donation.amount)}</p>
                 </div>
                 {donation.message ? (
-                  <p className="mt-2 rounded-md bg-zinc-50 px-2 py-1 text-sm text-zinc-700">
+                  <p className="mt-2 rounded-md border border-[#1a301f]/10 bg-white px-2 py-1.5 text-sm text-[#1a301f]/85">
                     &quot;{donation.message}&quot;
                   </p>
                 ) : null}
                 {donation.isAnonymous ? (
-                  <p className="font-medium text-black">
-                    Posted anonymously
-                  </p>
+                  <p className="mt-1 text-xs font-medium text-[#f47920]">Posted anonymously</p>
                 ) : null}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-black">Donation Form</h2>
-          <p className="mt-2 text-sm text-zinc-600">
+        <div className="rounded-2xl border border-[#1a301f]/20 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-[#1a301f]">Donation Form</h2>
+          <p className="mt-2 text-sm text-[#1a301f]/70">
             Pick a preset amount, enter a custom amount, and donate via Paystack popup.
           </p>
           <form ref={paystackFormRef} onSubmit={handlePaystackDonation} className="mt-4 space-y-3">
@@ -366,14 +393,14 @@ export default function Home() {
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
               placeholder="First name"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#1a301f]/20 bg-white px-3 py-2 text-sm text-[#1a301f] placeholder:text-[#1a301f]/40 focus:border-[#00a859] focus:outline-none focus:ring-2 focus:ring-[#00a859]/30"
               required
             />
             <input
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
               placeholder="Last name"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#1a301f]/20 bg-white px-3 py-2 text-sm text-[#1a301f] placeholder:text-[#1a301f]/40 focus:border-[#00a859] focus:outline-none focus:ring-2 focus:ring-[#00a859]/30"
               required
             />
             <input
@@ -381,11 +408,11 @@ export default function Home() {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="Email address"
               type="email"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#1a301f]/20 bg-white px-3 py-2 text-sm text-[#1a301f] placeholder:text-[#1a301f]/40 focus:border-[#00a859] focus:outline-none focus:ring-2 focus:ring-[#00a859]/30"
               required
             />
             <div>
-              <p className="mb-2 text-sm font-medium text-zinc-700">Preset amounts</p>
+              <p className="mb-2 text-sm font-semibold text-[#1a301f]">Preset amounts</p>
               <div className="flex flex-wrap gap-2">
                 {presetAmounts.map((preset) => (
                   <button
@@ -395,10 +422,10 @@ export default function Home() {
                       setSelectedAmount(preset);
                       setCustomAmount("");
                     }}
-                    className={`rounded-lg border px-3 py-2 text-sm ${
+                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
                       selectedAmount === preset
-                        ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                        : "border-zinc-300 text-zinc-700"
+                        ? "border-[#f47920] bg-[#fff4ed] text-[#c45a0f]"
+                        : "border-[#1a301f]/20 text-[#1a301f] hover:border-[#00a859]/40"
                     }`}
                   >
                     {formatCurrency(preset)}
@@ -415,26 +442,27 @@ export default function Home() {
               placeholder="Custom amount (NGN)"
               type="number"
               min="1"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#1a301f]/20 bg-white px-3 py-2 text-sm text-[#1a301f] placeholder:text-[#1a301f]/40 focus:border-[#00a859] focus:outline-none focus:ring-2 focus:ring-[#00a859]/30"
             />
             <textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Add a support message (optional)"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#1a301f]/20 bg-white px-3 py-2 text-sm text-[#1a301f] placeholder:text-[#1a301f]/40 focus:border-[#00a859] focus:outline-none focus:ring-2 focus:ring-[#00a859]/30"
               rows={3}
             />
-            <label className="flex items-center gap-2 text-sm text-zinc-700">
+            <label className="flex items-center gap-2 text-sm text-[#1a301f]">
               <input
                 type="checkbox"
                 checked={isAnonymous}
                 onChange={(event) => setIsAnonymous(event.target.checked)}
+                className="rounded border-[#1a301f]/30 text-[#f47920] focus:ring-[#f47920]"
               />
               Donate anonymously
             </label>
             <button
               type="submit"
-              className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              className="w-full rounded-lg bg-[#f47920] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e06a15]"
             >
               Donate with Paystack
             </button>
@@ -443,13 +471,15 @@ export default function Home() {
             <button
               type="button"
               onClick={handleManualDonation}
-              className="w-full rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100"
+              className="w-full rounded-lg border-2 border-[#1a301f]/25 bg-white px-4 py-2.5 text-sm font-semibold text-[#1a301f] transition hover:border-[#00a859]/50 hover:bg-[#eef2ef]"
             >
               Record as Manual Donation
             </button>
           </div>
           {paymentStatus ? (
-            <p className="mt-3 rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700">{paymentStatus}</p>
+            <p className="mt-3 rounded-md border border-[#1a301f]/10 bg-[#eef2ef] px-3 py-2 text-sm text-[#1a301f]">
+              {paymentStatus}
+            </p>
           ) : null}
         </div>
       </section>
@@ -464,9 +494,11 @@ type CardProps = {
 
 function Card({ label, value }: CardProps) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-      <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
-      <p className="mt-2 text-xl font-semibold text-black">{value}</p>
+    <div className="rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm sm:p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-white/70 sm:text-xs">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-bold text-white sm:text-xl">{value}</p>
     </div>
   );
 }
