@@ -10,8 +10,8 @@ export const manifesto = {
     "Representation rooted in service, transparency, and the dignity of every ward we serve.",
   /** Replace each paragraph with your own manifesto language. */
   paragraphs: [
-    "We believe leadership is earned in the community, not announced from a distance. This campaign is built on listening first—markets, schools, clinics, and farms—so the voices that are often heard last are represented first in Abuja.",
-    "We commit to accountable stewardship: every mandate will be measured in outcomes our people can see—access to quality healthcare and education, safer communities, and economic opportunity that starts at home.",
+    "We believe leadership is earned in the community, not announced from a distance. This campaign is built on listening first: markets, schools, clinics, and farms, so the voices that are often heard last are represented first in Abuja.",
+    "We commit to accountable stewardship: every mandate will be measured in outcomes our people can see: access to quality healthcare and education, safer communities, and economic opportunity that starts at home.",
     "The Esan Peoples Project is not a slogan. It is a promise that your trust, expressed in votes and in support like this fundraiser, will be honoured with discipline, courage, and an open door.",
   ],
   /** Short pledges donors can scan in seconds — swap for your own bullet commitments. */
