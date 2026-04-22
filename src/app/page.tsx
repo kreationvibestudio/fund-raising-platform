@@ -634,12 +634,7 @@ export default function Home() {
             </button>
             {adminManualOpen ? (
               <div className="mt-4 rounded-xl border border-[#1a301f]/20 bg-[#fafcfb] p-4">
-                <p className="text-xs leading-relaxed text-[#1a301f]/70">
-                  Only campaign admins can record bank transfers or offline gifts. The secret is never
-                  shown publicly — set <code className="rounded bg-[#eef2ef] px-1">ADMIN_MANUAL_SECRET</code>{" "}
-                  on the server (Render env).
-                </p>
-                <label className="mt-3 block text-xs font-semibold uppercase tracking-wide text-[#1a301f]">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a301f]">
                   Admin secret
                 </label>
                 <input
