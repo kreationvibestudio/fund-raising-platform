@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminManualSecretValid } from "@/lib/admin-secret";
+import { isAdminManualSecretValid, normalizeAdminSecretInput } from "@/lib/admin-secret";
 import { DonationInsertPayload, mapDonationRow, mapInsertPayloadToRow } from "@/lib/donations";
 import { createSupabasePublicServerClient, createSupabaseServiceClient } from "@/lib/supabase-server";
+
+function readAdminManualSecretFromEnv(): string {
+  const raw = process.env.ADMIN_MANUAL_SECRET ?? process.env.admin_manual_secret;
+  return raw ? normalizeAdminSecretInput(raw) : "";
+}
+
+function readProvidedAdminSecret(request: NextRequest): string {
+  const fromHeader = request.headers.get("x-admin-secret");
+  if (fromHeader) {
+    return normalizeAdminSecretInput(fromHeader);
+  }
+  const auth = request.headers.get("authorization")?.trim() ?? "";
+  const bearer = /^Bearer\s+(\S+)/i.exec(auth);
+  if (bearer?.[1]) {
+    return normalizeAdminSecretInput(bearer[1]);
+  }
+  return "";
+}
 
 const DONATIONS_TABLE = "donations";
 
@@ -47,19 +65,27 @@ export async function POST(request: NextRequest) {
     }
 
     if (payload.source === "manual") {
-      const expected = process.env.ADMIN_MANUAL_SECRET?.trim();
+      const expected = readAdminManualSecretFromEnv();
       if (!expected) {
         return NextResponse.json(
           {
             success: false,
-            message: "Manual donations are disabled. Set ADMIN_MANUAL_SECRET on the server.",
+            message:
+              "Manual donations are disabled. On Render set env ADMIN_MANUAL_SECRET (exact name; Linux is case-sensitive).",
           },
           { status: 503 },
         );
       }
-      const provided = request.headers.get("x-admin-secret")?.trim() ?? "";
+      const provided = readProvidedAdminSecret(request);
       if (!isAdminManualSecretValid(provided, expected)) {
-        return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Invalid admin secret. Match the Render value exactly (no extra spaces or quotes).",
+          },
+          { status: 401 },
+        );
       }
     }
 
@@ -83,6 +109,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Failed to create donation:", error);
+    const errMsg = error instanceof Error ? error.message : "";
+    if (errMsg.includes("Supabase service-role environment variables are missing")) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Server is missing SUPABASE_SERVICE_ROLE_KEY (or URL); check Render environment.",
+        },
+        { status: 500 },
+      );
+    }
     return NextResponse.json(
       { success: false, message: "Unable to create donation." },
       { status: 500 },

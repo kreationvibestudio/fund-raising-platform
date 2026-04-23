@@ -159,6 +159,7 @@ export default function Home() {
     };
     if (source === "manual" && options?.adminSecret) {
       headers["x-admin-secret"] = options.adminSecret;
+      headers.Authorization = `Bearer ${options.adminSecret}`;
     }
 
     const response = await fetch("/api/donations", {

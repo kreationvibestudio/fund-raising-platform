@@ -14,7 +14,7 @@ export type Donation = {
 export type DonationInsertPayload = {
   firstName: string;
   lastName: string;
-  email: string;
+  email?: string;
   amount: number;
   message?: string;
   isAnonymous: boolean;
@@ -52,7 +52,7 @@ export const mapDonationRow = (row: DonationRow): Donation => ({
 export const mapInsertPayloadToRow = (payload: DonationInsertPayload) => ({
   first_name: payload.firstName,
   last_name: payload.lastName,
-  email: payload.email,
+  email: payload.email?.trim() ? payload.email.trim() : null,
   amount: payload.amount,
   message: payload.message ?? null,
   is_anonymous: payload.isAnonymous,

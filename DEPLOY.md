@@ -27,3 +27,10 @@ Optional fallback:
 ## Manual donations (admin only)
 
 Recording a **manual** donation (bank/offline) requires server env **`ADMIN_MANUAL_SECRET`** (long random string). On the site, expand **Admin — manual / offline donation**, enter that secret, then submit. Without a valid secret, `POST /api/donations` with `source: manual` returns **401**.
+
+**Manual donation returns 401 on Render**
+
+- Render runs Linux: env names are **case-sensitive**. The app reads `ADMIN_MANUAL_SECRET` (recommended). A variable named only `admin_manual_secret` is also accepted.
+- Paste the secret **without** wrapping quotes in the Render dashboard (unless your secret literally includes quote characters).
+- The browser sends both `x-admin-secret` and `Authorization: Bearer …`. If you call the API from curl, use either header with the same value as in Render.
+- If you see **503** instead, the server process does not see any configured secret (wrong service, typo in name, or deploy not restarted after adding the variable).
